@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import Admin from './Admin.jsx'
 
+// API base URL — empty in dev (Vite proxy handles it), set to Render URL in production
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 // Default products that ship with the store
 const DEFAULT_PRODUCTS = [
   { 
@@ -26,10 +29,10 @@ function Root() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch(`${API_BASE}/api/products`);
       let data = await res.json();
       if (data.length === 0) {
-        const seedRes = await fetch('/api/products', {
+        const seedRes = await fetch(`${API_BASE}/api/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(DEFAULT_PRODUCTS)
@@ -58,7 +61,7 @@ function Root() {
     const withIds = newProducts.map((p, i) => ({ ...p, id: maxId + i + 1 }));
     
     try {
-      const res = await fetch('/api/products', {
+      const res = await fetch(`${API_BASE}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(withIds)
@@ -73,7 +76,7 @@ function Root() {
 
   const updateProduct = async (id, updates) => {
     try {
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -87,7 +90,7 @@ function Root() {
 
   const deleteProduct = async (id) => {
     try {
-      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/products/${id}`, { method: 'DELETE' });
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error('Failed to delete product:', err);

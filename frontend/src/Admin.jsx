@@ -154,7 +154,7 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
       <div className="admin-login-page">
         <div className="admin-login-card">
           <div className="admin-login-header">
-            <div className="admin-logo">release</div>
+            <div className="admin-logo">Prime Threads</div>
             <h2>Admin Panel</h2>
             <p>Enter your credentials to access the dashboard</p>
           </div>
@@ -201,7 +201,7 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
 
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <div className="sidebar-logo">release</div>
+        <div className="sidebar-logo">Prime Threads</div>
         <nav className="sidebar-nav">
           <button className={`sidebar-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
             <BarChart3 size={18} /> Dashboard

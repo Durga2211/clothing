@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -5,18 +6,43 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Allow large image payloads
+// CORS — allow frontend origin
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  }
+}));
+
+app.use(express.json({ limit: '50mb' }));
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clothing';
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 const Product = require('./models/Product');
 
-// API Routes
+// ─── Health Check ─────────────────────────────
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', service: 'Prime Threads API', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  res.json({ status: 'ok', database: states[dbState] || 'unknown' });
+});
+
+// ─── API Routes ───────────────────────────────
 
 // GET all products
 app.get('/api/products', async (req, res) => {
@@ -35,13 +61,12 @@ app.post('/api/products', async (req, res) => {
     if (Array.isArray(newProducts)) {
       const savedProducts = [];
       for (const p of newProducts) {
-         // Upsert based on ID
-         const updated = await Product.findOneAndUpdate(
-           { id: p.id },
-           p,
-           { new: true, upsert: true }
-         );
-         savedProducts.push(updated);
+        const updated = await Product.findOneAndUpdate(
+          { id: p.id },
+          p,
+          { new: true, upsert: true }
+        );
+        savedProducts.push(updated);
       }
       res.json(savedProducts);
     } else {
@@ -52,7 +77,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-// UPDATE a product (e.g. sizes, price)
+// UPDATE a product
 app.put('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -76,5 +101,5 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

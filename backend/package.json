@@ -1,14 +1,18 @@
 {
-  "name": "backend",
+  "name": "prime-threads-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Prime Threads API server",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

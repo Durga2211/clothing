@@ -1,3 +1,17 @@
+# Dependencies
+node_modules
+frontend/node_modules
+backend/node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Environment files (contain secrets)
+.env
+backend/.env
+frontend/.env.production
+
 # Logs
 logs
 *.log
@@ -7,9 +21,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
 *.local
 
 # Editor directories and files
