@@ -6,9 +6,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prime Threads — Where Style Speaks</title>
     <meta name="description" content="Premium fashion destination where trends blend seamlessly with your individual style aspirations." />
+    <style>
+      body { margin: 0; background: #0a0a0a; }
+      #pt-splash {
+        position: fixed; inset: 0; z-index: 99999;
+        background: #0a0a0a;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        transition: opacity .5s ease, visibility .5s ease;
+      }
+      #pt-splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+      #pt-splash svg { animation: splashPulse 1.5s ease-in-out infinite; }
+      #pt-splash .splash-text {
+        color: #fff; font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 18px; font-weight: 700; letter-spacing: 3px; margin-top: 20px;
+      }
+      #pt-splash .splash-sub {
+        color: rgba(255,255,255,.35); font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 12px; margin-top: 8px; letter-spacing: 1px;
+      }
+      #pt-splash .splash-bar {
+        width: 120px; height: 2px; background: rgba(255,255,255,.1);
+        border-radius: 2px; margin-top: 32px; overflow: hidden;
+      }
+      #pt-splash .splash-bar-fill {
+        width: 30%; height: 100%; background: #fff; border-radius: 2px;
+        animation: splashLoad 1.8s ease-in-out infinite;
+      }
+      @keyframes splashPulse {
+        0%, 100% { opacity: .6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.05); }
+      }
+      @keyframes splashLoad {
+        0% { width: 0; margin-left: 0; }
+        50% { width: 70%; margin-left: 15%; }
+        100% { width: 0; margin-left: 100%; }
+      }
+    </style>
   </head>
   <body>
+    <!-- Splash screen — renders instantly before React loads -->
+    <div id="pt-splash">
+      <svg width="44" height="44" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L4 8v12l10 6 10-6V8L14 2z" stroke="#fff" stroke-width="1.5" fill="none"/>
+        <path d="M14 10l-4 2.5v5L14 20l4-2.5v-5L14 10z" fill="#fff" opacity="0.3"/>
+      </svg>
+      <div class="splash-text">PRIME THREADS</div>
+      <div class="splash-sub">Loading your style...</div>
+      <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+

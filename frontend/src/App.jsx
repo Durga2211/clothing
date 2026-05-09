@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Search, User, ShoppingBag, ChevronLeft, ChevronRight, ArrowUp, CheckCircle, Mail, Menu, X, Truck, RotateCcw, ArrowRight, Phone, MapPin, Send, Minus, Plus, Trash2 } from 'lucide-react';
+import Checkout from './Checkout.jsx';
 import './index.css';
 
 function App({ products: allProducts = [] }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pt_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [addedProduct, setAddedProduct] = useState(null);
   const [toast, setToast] = useState({ message: '', visible: false });
@@ -15,7 +21,16 @@ function App({ products: allProducts = [] }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [currentView, setCurrentView] = useState('home'); // home, shop, sale
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState([]);
   const productsRef = useRef(null);
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('pt_cart', JSON.stringify(cart));
+    } catch (e) { /* silently fail */ }
+  }, [cart]);
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => {
@@ -104,13 +119,25 @@ function App({ products: allProducts = [] }) {
       showNotification('Please select a size first.');
       return;
     }
-    const phone = '917019330696';
-    const imageUrl = `${window.location.origin}${product.image}`;
-    const sizeText = selectedSize ? `\n📏 Size: ${selectedSize}` : '';
-    const message = `Hi! I'd like to buy this item:\n\n🛍️ *${product.title}*\n💰 Price: ${product.price}${sizeText}\n📷 Image: ${imageUrl}\n\nPlease confirm availability and proceed with my order. Thank you!`;
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    showNotification('Opening WhatsApp...');
+    const buyItem = {
+      ...product,
+      cartKey: `${product.id}-${selectedSize || 'onesize'}-buy`,
+      selectedSize: selectedSize || 'One Size',
+      qty: quantity,
+    };
+    setCheckoutItems([buyItem]);
+    setCheckoutOpen(true);
+  };
+
+  const handleCartCheckout = () => {
+    if (cart.length === 0) return;
+    setCheckoutItems([...cart]);
+    setCartOpen(false);
+    setCheckoutOpen(true);
+  };
+
+  const clearCart = () => {
+    setCart([]);
   };
 
   const scrollToProducts = () => {
@@ -257,13 +284,8 @@ function App({ products: allProducts = [] }) {
                 <span>Total</span>
                 <span>Rs. {cartTotal.toLocaleString('en-IN')}.00</span>
               </div>
-              <button className="pt-btn pt-btn--primary pt-btn--full" onClick={() => {
-                const phone = '917019330696';
-                const items = cart.map(item => `• ${item.title} (${item.selectedSize}) x${item.qty} — ${item.price}`).join('\n');
-                const message = `Hi! I'd like to order:\n\n${items}\n\n💰 Total: Rs. ${cartTotal.toLocaleString('en-IN')}.00\n\nPlease confirm!`;
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-              }}>
-                Checkout via WhatsApp
+              <button className="pt-btn pt-btn--primary pt-btn--full" onClick={handleCartCheckout}>
+                Checkout — Rs. {cartTotal.toLocaleString('en-IN')}.00
               </button>
             </div>
           </>
@@ -577,6 +599,18 @@ function App({ products: allProducts = [] }) {
 
       <CartDrawer />
       <ContactModal />
+
+      {/* Checkout Overlay */}
+      {checkoutOpen && (
+        <Checkout
+          items={checkoutItems}
+          onClose={() => setCheckoutOpen(false)}
+          onSuccess={(pid) => {
+            showNotification(`Payment successful! ID: ${pid}`);
+          }}
+          clearCart={clearCart}
+        />
+      )}
 
       {/* Sticky Bar on Product Detail */}
       {selectedProduct && (

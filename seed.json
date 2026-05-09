@@ -1,0 +1,14 @@
+[
+  { 
+    "id": 1, 
+    "title": "BLACK PUFFER EDGE", 
+    "price": "Rs. 7,499.00", 
+    "image": "/product1.png",
+    "description": "A modern twist on the classic puffer, the Black Puffer Edge features an oversized collar and minimalist design. Warm, water-resistant, and perfect for layering—this jacket is a seasonal essential.",
+    "images": ["/product1.png", "/puffer_crop1.png", "/puffer_crop2.png", "/product1.png"],
+    "sizes": ["S", "M", "L", "XL"]
+  },
+  { "id": 2, "title": "BLACK BLAZER DRESS", "price": "Rs. 5,499.00", "image": "/product2.png", "description": "Elegant tailored blazer dress.", "images": ["/product2.png", "/product2.png"], "sizes": ["XS", "S", "M", "L"] },
+  { "id": 3, "title": "BLACK HIGH-WAIST JEANS", "price": "Rs. 3,999.00", "image": "/product3.png", "description": "Classic wide-leg denim.", "images": ["/product3.png", "/product3.png"], "sizes": ["28", "30", "32", "34", "36"] },
+  { "id": 4, "title": "BLACK PUFFER JACKET", "price": "Rs. 5,799.00", "image": "/product4.png", "description": "Daily essential puffer.", "images": ["/product4.png", "/product4.png"], "sizes": ["M", "L", "XL"] }
+]

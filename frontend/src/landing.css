@@ -1,8 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 :root{--font:'Inter',sans-serif;--bg:#0a0a0a;--white:#fff;--muted:#888}
 *{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--bg)}
 body{font-family:var(--font);background:var(--bg);color:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.pt-app{min-height:100vh;display:flex;flex-direction:column}
+.pt-app{min-height:100vh;display:flex;flex-direction:column;animation:appFadeIn .4s ease}
+@keyframes appFadeIn{from{opacity:0}to{opacity:1}}
 
 /* NAV */
 .pt-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 48px;position:sticky;top:0;z-index:100;transition:all .3s}
@@ -206,3 +208,259 @@ body{font-family:var(--font);background:var(--bg);color:var(--white);-webkit-fon
 .pt-footer{padding:40px 20px 20px}
 .pt-footer__bottom{flex-direction:column;gap:12px;text-align:center}
 }
+
+/* ═══════════════════════════════════════════
+   CHECKOUT OVERLAY
+   ═══════════════════════════════════════════ */
+
+.checkout-overlay{
+  position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;
+  animation:checkoutFadeIn .3s ease;backdrop-filter:blur(4px)
+}
+@keyframes checkoutFadeIn{from{opacity:0}to{opacity:1}}
+
+.checkout-container{
+  display:grid;grid-template-columns:360px 1fr;
+  width:95%;max-width:960px;max-height:92vh;
+  background:#fff;border-radius:16px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.25);
+  animation:checkoutSlideUp .35s cubic-bezier(.4,0,.2,1)
+}
+@keyframes checkoutSlideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ─── ORDER SUMMARY (left) ─── */
+.checkout-summary{
+  background:#fafafa;border-right:1px solid #eee;padding:28px;
+  display:flex;flex-direction:column;gap:20px;overflow-y:auto
+}
+.checkout-summary__header{display:flex;justify-content:space-between;align-items:center}
+.checkout-summary__header h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.checkout-summary__items{display:flex;flex-direction:column;gap:14px}
+.checkout-summary__item{
+  display:flex;gap:14px;padding:14px;background:#fff;border-radius:10px;
+  border:1px solid #eee;transition:box-shadow .2s
+}
+.checkout-summary__item:hover{box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.checkout-summary__item-img{
+  width:60px;height:72px;object-fit:cover;border-radius:8px;background:#f0f0f0;flex-shrink:0
+}
+.checkout-summary__item-info{display:flex;flex-direction:column;gap:4px;justify-content:center}
+.checkout-summary__item-title{font-size:13px;font-weight:700;line-height:1.3}
+.checkout-summary__item-meta{font-size:11px;color:#888}
+
+.checkout-summary__totals{
+  display:flex;flex-direction:column;gap:10px;
+  padding:16px;background:#fff;border-radius:10px;border:1px solid #eee
+}
+.checkout-summary__row{display:flex;justify-content:space-between;font-size:13px;color:#555}
+.checkout-summary__row--discount{color:#10b981;font-weight:600}
+.checkout-summary__row--total{font-size:16px;font-weight:700;color:#000;padding-top:10px;border-top:1px solid #eee}
+.checkout-summary__free{color:#10b981;font-weight:600}
+
+/* Coupon */
+.checkout-coupon{margin-top:0}
+.checkout-coupon__form{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:#fff;border:1px solid #eee;border-radius:10px
+}
+.checkout-coupon__form input{
+  flex:1;border:none;outline:none;font-size:13px;font-family:var(--font);
+  background:transparent;padding:4px 0
+}
+.checkout-coupon__form button{
+  background:none;border:none;color:#10b981;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--font);white-space:nowrap
+}
+.checkout-coupon__applied{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;font-size:13px;font-weight:600;color:#059669
+}
+.checkout-coupon__applied button{
+  margin-left:auto;background:none;border:none;color:#ef4444;
+  font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)
+}
+.checkout-coupon__error{font-size:12px;color:#ef4444;margin-top:6px;padding-left:4px}
+
+.checkout-summary__badges{display:flex;gap:10px}
+.checkout-summary__badge{
+  flex:1;display:flex;align-items:center;gap:6px;padding:10px;
+  background:#fff;border:1px solid #eee;border-radius:8px;
+  font-size:11px;font-weight:600;color:#555
+}
+
+/* ─── FORM PANEL (right) ─── */
+.checkout-form-panel{
+  display:flex;flex-direction:column;overflow-y:auto;position:relative
+}
+
+.checkout-form__topbar{
+  display:flex;justify-content:space-between;align-items:center;padding:16px 28px;
+  border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:#fff;z-index:2
+}
+.checkout-form__back,.checkout-form__close{
+  background:none;border:none;cursor:pointer;color:#000;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;transition:background .2s
+}
+.checkout-form__back:hover,.checkout-form__close:hover{background:#f0f0f0}
+
+/* Progress bar */
+.checkout-progress{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  padding:20px 28px 4px
+}
+.checkout-progress__step{
+  display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#bbb;
+  transition:color .3s
+}
+.checkout-progress__step--active{color:#000;font-weight:700}
+.checkout-progress__number{
+  width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;background:#f0f0f0;color:#bbb;transition:all .3s
+}
+.checkout-progress__step--active .checkout-progress__number{background:#000;color:#fff}
+.checkout-progress__line{
+  width:60px;height:3px;background:#eee;margin:0 8px;border-radius:3px;overflow:hidden
+}
+.checkout-progress__line-fill{
+  width:0;height:100%;background:#000;border-radius:3px;transition:width .4s ease
+}
+.checkout-progress__line-fill--active{width:100%}
+
+/* Prepaid banner */
+.checkout-banner{
+  display:flex;align-items:center;gap:8px;margin:12px 28px;
+  padding:12px 16px;background:#000;color:#fff;border-radius:8px;
+  font-size:12px;font-weight:500
+}
+.checkout-banner strong{font-weight:700}
+
+/* Form content */
+.checkout-form__content{flex:1;padding:20px 28px;overflow-y:auto}
+
+.checkout-step{}
+.checkout-step__title{font-size:22px;font-weight:700;margin-bottom:4px}
+.checkout-step__desc{font-size:13px;color:#888;margin-bottom:24px}
+
+/* Form fields */
+.checkout-field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.checkout-field label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#555}
+.checkout-field input,.checkout-field textarea{
+  padding:12px 16px;border:1.5px solid #ddd;border-radius:8px;
+  font-size:14px;font-family:var(--font);outline:none;transition:border-color .3s;
+  background:#fff;resize:vertical
+}
+.checkout-field input:focus,.checkout-field textarea:focus{border-color:#000}
+.checkout-field__error{font-size:11px;color:#ef4444;font-weight:500}
+.checkout-field__phone{display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;transition:border-color .3s}
+.checkout-field__phone:focus-within{border-color:#000}
+.checkout-field__phone input{border:none;border-radius:0;flex:1;padding:12px 16px}
+.checkout-field__prefix{
+  display:flex;align-items:center;padding:0 14px;
+  background:#f8f8f8;border-right:1px solid #eee;font-size:14px;font-weight:600;color:#333
+}
+
+.checkout-field-row{display:grid;gap:14px}
+.checkout-field-row--3{grid-template-columns:1fr 1fr 1fr}
+.checkout-field-row--3 .checkout-field{margin-bottom:0}
+
+/* Payment summary */
+.checkout-payment-summary{
+  background:#fafafa;border:1px solid #eee;border-radius:12px;padding:20px;
+  display:flex;flex-direction:column;gap:14px;margin-top:8px
+}
+.checkout-payment-summary__item{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
+.checkout-payment-summary__item span{color:#888}
+.checkout-payment-summary__item strong{font-weight:600;color:#000;text-align:right;max-width:60%}
+.checkout-payment-summary__item--total{font-size:18px;padding-top:12px}
+.checkout-payment-summary__item--total span{color:#000;font-weight:600}
+.checkout-payment-summary__item--total strong{font-weight:800;color:#000}
+.checkout-payment-summary__divider{height:1px;background:#eee}
+
+.checkout-payment-methods{margin-top:20px}
+.checkout-payment-method{
+  display:flex;align-items:center;gap:14px;padding:16px;
+  background:#fff;border:2px solid #000;border-radius:10px;
+  cursor:pointer;transition:all .2s
+}
+.checkout-payment-method img{height:24px}
+.checkout-payment-method span{font-size:12px;color:#555}
+
+/* Bottom action */
+.checkout-form__footer{
+  padding:16px 28px;border-top:1px solid #eee;
+  position:sticky;bottom:0;background:#fff;z-index:2
+}
+
+.checkout-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;font-size:14px;font-weight:700;
+  font-family:var(--font);border:none;border-radius:8px;cursor:pointer;
+  transition:all .2s;letter-spacing:.5px
+}
+.checkout-btn--primary{background:#000;color:#fff}
+.checkout-btn--primary:hover{background:#222}
+.checkout-btn--primary:disabled{background:#ccc;cursor:not-allowed}
+.checkout-btn--pay{font-size:16px;padding:18px;background:linear-gradient(135deg,#000 0%,#333 100%)}
+.checkout-btn--pay:hover{background:linear-gradient(135deg,#111 0%,#444 100%)}
+
+.checkout-btn__spinner{
+  width:20px;height:20px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── SUCCESS SCREEN ─── */
+.checkout-success{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 40px;text-align:center;grid-column:1/-1;min-height:500px
+}
+.checkout-success__icon{
+  width:100px;height:100px;background:#ecfdf5;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#10b981;margin-bottom:24px;animation:successPop .5s cubic-bezier(.4,0,.2,1)
+}
+@keyframes successPop{0%{transform:scale(0);opacity:0}50%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.checkout-success h2{font-size:28px;font-weight:700;margin-bottom:8px}
+.checkout-success p{font-size:14px;color:#888;margin-bottom:24px}
+.checkout-success__details{
+  width:100%;max-width:400px;background:#fafafa;border:1px solid #eee;
+  border-radius:12px;padding:20px;margin-bottom:24px;
+  display:flex;flex-direction:column;gap:12px
+}
+.checkout-success__detail-row{
+  display:flex;justify-content:space-between;font-size:13px
+}
+.checkout-success__detail-row span{color:#888}
+.checkout-success__detail-row strong{color:#000;font-weight:600}
+.checkout-success__note{font-size:13px;color:#888;margin-bottom:28px}
+.checkout-success__note strong{color:#000}
+
+/* ─── CHECKOUT MOBILE ─── */
+@media(max-width:768px){
+  .checkout-container{
+    grid-template-columns:1fr;max-height:100vh;max-width:100%;
+    width:100%;border-radius:0;height:100vh
+  }
+  .checkout-summary{
+    display:none
+  }
+  .checkout-form-panel{height:100vh}
+  .checkout-form__content{padding:16px 20px}
+  .checkout-banner{margin:12px 20px}
+  .checkout-form__footer{padding:12px 20px}
+  .checkout-form__topbar{padding:12px 20px}
+  .checkout-field-row--3{grid-template-columns:1fr}
+  .checkout-progress__line{width:40px}
+  .checkout-success{padding:40px 20px}
+  .checkout-success h2{font-size:22px}
+}
+
+/* Mobile order summary toggle for mobile */
+@media(max-width:768px){
+  .checkout-form__content::before{
+    content:'';display:block;margin-bottom:0
+  }
+}
+

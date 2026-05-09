@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { ShoppingBag, Users, TrendingUp, DollarSign, Package, ArrowUp, ArrowDown, LogOut, Eye, ChevronDown, BarChart3, Clock, CheckCircle, Search, Plus, X, Upload, Save, Trash2, Image, Edit3 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ShoppingBag, Users, TrendingUp, DollarSign, Package, ArrowUp, ArrowDown, LogOut, Eye, ChevronDown, ChevronUp, BarChart3, Clock, CheckCircle, Search, Plus, X, Upload, Save, Trash2, Image, Edit3, MapPin, Phone, Mail, CreditCard } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const ADMIN_USER = 'fardad';
 const ADMIN_PASS = '1234567890';
@@ -11,7 +13,51 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [saveToast, setSaveToast] = useState('');
-  const [editingSizes, setEditingSizes] = useState(null); // { id, sizes: 'S, M, L' }
+  const [editingSizes, setEditingSizes] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState(null);
+
+  // Fetch orders from DB
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/all`);
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+    setOrdersLoading(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) fetchOrders();
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (activeTab === 'orders' || activeTab === 'dashboard') fetchOrders();
+  }, [activeTab]);
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, status: newStatus } : o));
+      setSaveToast(`Order ${orderId} status updated to ${newStatus}`);
+      setTimeout(() => setSaveToast(''), 3000);
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   // ─── ADD PRODUCTS STATE ──────────────────────
   const [newItems, setNewItems] = useState([]);
@@ -115,21 +161,13 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
     setPassword('');
   };
 
-  // Mock data for dashboard
+  // Dashboard stats from real orders
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const stats = [
-    { label: 'Total Revenue', value: '₹12,84,500', change: '+14.2%', positive: true, icon: DollarSign },
-    { label: 'Total Orders', value: '156', change: '+8.7%', positive: true, icon: ShoppingBag },
-    { label: 'New Customers', value: '43', change: '+12.1%', positive: true, icon: Users },
-    { label: 'Conversion Rate', value: '3.2%', change: '-0.4%', positive: false, icon: TrendingUp },
-  ];
-
-  const recentOrders = [
-    { id: '#ORD-2841', customer: 'Arjun Mehta', product: 'BLACK PUFFER EDGE', price: 'Rs. 7,499', status: 'Delivered', date: '28 Apr 2026' },
-    { id: '#ORD-2840', customer: 'Sofia Rossi', product: 'BLACK BLAZER DRESS', price: 'Rs. 5,499', status: 'Shipped', date: '27 Apr 2026' },
-    { id: '#ORD-2839', customer: 'Liam Chen', product: 'BLACK HIGH-WAIST JEANS', price: 'Rs. 3,999', status: 'Processing', date: '27 Apr 2026' },
-    { id: '#ORD-2838', customer: 'Emma Davis', product: 'AQUASHIELD WINDBREAKER', price: 'Rs. 9,150', status: 'Delivered', date: '26 Apr 2026' },
-    { id: '#ORD-2837', customer: 'Kai Nakamura', product: 'BLACK PUFFER JACKET', price: 'Rs. 5,799', status: 'Delivered', date: '26 Apr 2026' },
-    { id: '#ORD-2836', customer: 'Priya Sharma', product: 'LIGHT GREY COZY CHIC TEE', price: 'Rs. 2,900', status: 'Shipped', date: '25 Apr 2026' },
+    { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString('en-IN')}`, change: 'Live', positive: true, icon: DollarSign },
+    { label: 'Total Orders', value: `${orders.length}`, change: 'Live', positive: true, icon: ShoppingBag },
+    { label: 'Products', value: `${products.length}`, change: 'Active', positive: true, icon: Package },
+    { label: 'Customers', value: `${new Set(orders.map(o => o.customer?.email)).size}`, change: 'Unique', positive: true, icon: Users },
   ];
 
   const topProducts = [
@@ -144,6 +182,8 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
       case 'Delivered': return '#10b981';
       case 'Shipped': return '#3b82f6';
       case 'Processing': return '#f59e0b';
+      case 'Paid': return '#8b5cf6';
+      case 'Cancelled': return '#ef4444';
       default: return '#888';
     }
   };
@@ -276,36 +316,42 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
               <div className="admin-card">
                 <div className="admin-card-header">
                   <h3>Recent Orders</h3>
-                  <button className="admin-card-action">View All</button>
+                  <button className="admin-card-action" onClick={() => setActiveTab('orders')}>View All</button>
                 </div>
+                {orders.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: 'center', color: '#888', fontSize: 14 }}>
+                    No orders yet. Orders will appear here after customers make payments.
+                  </div>
+                ) : (
                 <table className="admin-table">
                   <thead>
                     <tr>
                       <th>Order</th>
                       <th>Customer</th>
-                      <th>Product</th>
-                      <th>Price</th>
+                      <th>Items</th>
+                      <th>Total</th>
                       <th>Status</th>
                       <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.map((order, i) => (
+                    {orders.slice(0, 6).map((order, i) => (
                       <tr key={i}>
-                        <td style={{ fontWeight: 600 }}>{order.id}</td>
-                        <td>{order.customer}</td>
-                        <td>{order.product}</td>
-                        <td>{order.price}</td>
+                        <td style={{ fontWeight: 600, fontSize: 12 }}>{order.orderId}</td>
+                        <td>{order.customer?.fullName}</td>
+                        <td>{order.items?.map(it => it.title).join(', ')}</td>
+                        <td style={{ fontWeight: 600 }}>₹{order.total?.toLocaleString('en-IN')}</td>
                         <td>
                           <span className="status-badge" style={{ color: getStatusColor(order.status), background: `${getStatusColor(order.status)}15` }}>
                             {order.status}
                           </span>
                         </td>
-                        <td style={{ color: '#888' }}>{order.date}</td>
+                        <td style={{ color: '#888' }}>{formatDate(order.createdAt)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                )}
               </div>
 
               <div className="admin-card">
@@ -334,39 +380,102 @@ function Admin({ onBack, products = [], addProducts, updateProduct, deleteProduc
         {/* ═══ ORDERS TAB ═══ */}
         {activeTab === 'orders' && (
           <div className="admin-content">
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h3>All Orders</h3>
+            {ordersLoading ? (
+              <div style={{ padding: 60, textAlign: 'center', color: '#888' }}>Loading orders...</div>
+            ) : orders.length === 0 ? (
+              <div className="admin-card" style={{ padding: 60, textAlign: 'center' }}>
+                <ShoppingBag size={48} strokeWidth={1} style={{ color: '#ddd', marginBottom: 16 }} />
+                <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No orders yet</h3>
+                <p style={{ color: '#888', fontSize: 14 }}>Orders will appear here once customers complete payments.</p>
               </div>
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.map((order, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 600 }}>{order.id}</td>
-                      <td>{order.customer}</td>
-                      <td>{order.product}</td>
-                      <td>{order.price}</td>
-                      <td>
-                        <span className="status-badge" style={{ color: getStatusColor(order.status), background: `${getStatusColor(order.status)}15` }}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td style={{ color: '#888' }}>{order.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {orders.map((order) => (
+                  <div key={order.orderId} className="admin-card" style={{ overflow: 'visible' }}>
+                    {/* Order header row */}
+                    <div
+                      className="admin-card-header"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setExpandedOrder(expandedOrder === order.orderId ? null : order.orderId)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{order.orderId}</span>
+                          <span style={{ fontSize: 11, color: '#888' }}>{formatDate(order.createdAt)}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{order.customer?.fullName}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+                          {order.items?.map((item, idx) => (
+                            <img key={idx} src={item.image} alt={item.title} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, background: '#f5f5f5' }} />
+                          ))}
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>₹{order.total?.toLocaleString('en-IN')}</span>
+                        <select
+                          value={order.status}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => updateOrderStatus(order.orderId, e.target.value)}
+                          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', color: getStatusColor(order.status), background: `${getStatusColor(order.status)}10`, cursor: 'pointer' }}
+                        >
+                          <option value="Paid">Paid</option>
+                          <option value="Processing">Processing</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                        {expandedOrder === order.orderId ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </div>
+                    </div>
+
+                    {/* Expanded details */}
+                    {expandedOrder === order.orderId && (
+                      <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, borderTop: '1px solid #eee', background: '#fafafa' }}>
+                        {/* Items */}
+                        <div>
+                          <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#888', marginBottom: 12 }}>Items Ordered</h4>
+                          {order.items?.map((item, idx) => (
+                            <div key={idx} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
+                              <img src={item.image} alt="" style={{ width: 52, height: 64, objectFit: 'cover', borderRadius: 6, background: '#f0f0f0' }} />
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>{item.title}</div>
+                                <div style={{ fontSize: 11, color: '#888' }}>Size: {item.selectedSize} · Qty: {item.qty}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2 }}>{item.price}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Customer */}
+                        <div>
+                          <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#888', marginBottom: 12 }}>Customer Details</h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}><Users size={14} color="#888" /> {order.customer?.fullName}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}><Phone size={14} color="#888" /> +91 {order.customer?.phone}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}><Mail size={14} color="#888" /> {order.customer?.email}</div>
+                          </div>
+                        </div>
+                        {/* Shipping + Payment */}
+                        <div>
+                          <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#888', marginBottom: 12 }}>Shipping & Payment</h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13 }}>
+                              <MapPin size={14} color="#888" style={{ marginTop: 2, flexShrink: 0 }} />
+                              <span>{order.shipping?.address}, {order.shipping?.city}, {order.shipping?.state} - {order.shipping?.pincode}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                              <CreditCard size={14} color="#888" /> {order.razorpayPaymentId || 'N/A'}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                              Subtotal: ₹{order.subtotal?.toLocaleString('en-IN')} {order.discount > 0 && `· Discount: -₹${order.discount?.toLocaleString('en-IN')}`} {order.couponCode && `(${order.couponCode})`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

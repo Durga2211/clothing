@@ -4,6 +4,13 @@ import './index.css'
 import App from './App.jsx'
 import Admin from './Admin.jsx'
 
+// Load Razorpay checkout script
+if (!document.querySelector('script[src*="razorpay"]')) {
+  const script = document.createElement('script');
+  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  script.async = true;
+  document.head.appendChild(script);
+}
 // API base URL — empty in dev (Vite proxy handles it), set to Render URL in production
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -26,6 +33,15 @@ const DEFAULT_PRODUCTS = [
 function Root() {
   const [route, setRoute] = useState(window.location.hash);
   const [products, setProducts] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const dismissSplash = () => {
+    const splash = document.getElementById('pt-splash');
+    if (splash) {
+      splash.classList.add('hidden');
+      setTimeout(() => splash.remove(), 600);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -44,6 +60,8 @@ function Root() {
       console.error('Failed to fetch products:', err);
       setProducts(DEFAULT_PRODUCTS);
     }
+    setLoaded(true);
+    dismissSplash();
   };
 
   useEffect(() => {

@@ -2,9 +2,17 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_SnHyJEwpmkp52k',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'E3ozfWWwY164A8tS4EGwvDf1',
+});
 
 // CORS — allow frontend origin
 const allowedOrigins = [
@@ -30,6 +38,7 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
 const Product = require('./models/Product');
+const Order = require('./models/Order');
 
 // ─── Health Check ─────────────────────────────
 app.get('/', (req, res) => {
@@ -95,6 +104,96 @@ app.delete('/api/products/:id', async (req, res) => {
     const id = Number(req.params.id);
     await Product.findOneAndDelete({ id });
     res.json({ message: 'Product deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ─── Razorpay Order Routes ────────────────────
+
+// Create a Razorpay order
+app.post('/api/orders', async (req, res) => {
+  try {
+    const { amount, currency = 'INR', receipt, notes } = req.body;
+    if (!amount) return res.status(400).json({ message: 'Amount is required' });
+
+    const options = {
+      amount: Math.round(amount * 100), // Razorpay expects paise
+      currency,
+      receipt: receipt || `order_${Date.now()}`,
+      notes: notes || {},
+    };
+
+    const order = await razorpay.orders.create(options);
+    res.json({
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID || 'rzp_test_SnHyJEwpmkp52k',
+    });
+  } catch (err) {
+    console.error('Razorpay order error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Verify payment signature
+app.post('/api/orders/verify', async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'E3ozfWWwY164A8tS4EGwvDf1';
+
+    const generated_signature = crypto
+      .createHmac('sha256', secret)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (generated_signature === razorpay_signature) {
+      res.json({ verified: true, payment_id: razorpay_payment_id });
+    } else {
+      res.status(400).json({ verified: false, message: 'Invalid signature' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ─── Order Management Routes ──────────────────
+
+// Save a completed order
+app.post('/api/orders/save', async (req, res) => {
+  try {
+    const orderData = req.body;
+    const order = new Order(orderData);
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    console.error('Save order error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET all saved orders (for admin dashboard)
+app.get('/api/orders/all', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// UPDATE order status
+app.put('/api/orders/:orderId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      { status },
+      { new: true }
+    );
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
