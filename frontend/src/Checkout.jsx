@@ -26,7 +26,7 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => {
-    const price = parseInt(item.price.replace(/[^\d]/g, '')) / 100;
+    const price = parseFloat(item.price.replace(/^Rs\.?\s*/i, '').replace(/,/g, '')) || 0;
     return sum + price * item.qty;
   }, 0);
 
@@ -103,8 +103,11 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
     setCouponError('');
   };
 
+  const [paymentError, setPaymentError] = useState('');
+
   const initiatePayment = async () => {
     setLoading(true);
+    setPaymentError('');
     try {
       // Create order on backend
       const orderRes = await fetch(`${API_BASE}/api/orders`, {
@@ -122,6 +125,11 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
           },
         }),
       });
+
+      if (!orderRes.ok) {
+        const errData = await orderRes.json().catch(() => ({}));
+        throw new Error(errData.message || `Server error (${orderRes.status})`);
+      }
 
       const orderData = await orderRes.json();
 
@@ -208,6 +216,8 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
               setPaymentId(response.razorpay_payment_id);
               if (clearCart) clearCart();
               if (onSuccess) onSuccess(response.razorpay_payment_id);
+            } else {
+              setPaymentError('Payment verification failed. Please contact support if amount was deducted.');
             }
           } catch (err) {
             console.error('Verification failed:', err);
@@ -225,11 +235,21 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
       };
 
       const rzp = new window.Razorpay(options);
+
+      // Handle payment failures
+      rzp.on('payment.failed', function (response) {
+        setLoading(false);
+        const desc = response.error?.description || 'Payment failed. Please try again.';
+        const reason = response.error?.reason || '';
+        setPaymentError(`${desc}${reason ? ` (${reason})` : ''}`);
+        console.error('Payment failed:', response.error);
+      });
+
       rzp.open();
     } catch (err) {
       console.error('Payment initiation failed:', err);
       setLoading(false);
-      alert('Failed to initiate payment. Please try again.');
+      setPaymentError(err.message || 'Failed to initiate payment. Please try again.');
     }
   };
 
@@ -521,6 +541,12 @@ function Checkout({ items, onClose, onSuccess, clearCart }) {
                     <span>UPI, Cards, Net Banking, Wallets & More</span>
                   </div>
                 </div>
+
+                {paymentError && (
+                  <div className="checkout-field__error" style={{ marginTop: '16px', padding: '12px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', textAlign: 'center' }}>
+                    {paymentError}
+                  </div>
+                )}
               </div>
             )}
           </div>

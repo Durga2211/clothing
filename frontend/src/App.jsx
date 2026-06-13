@@ -34,7 +34,7 @@ function App({ products: allProducts = [] }) {
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => {
-    const price = parseInt(item.price.replace(/[^\d]/g, '')) / 100;
+    const price = parseFloat(item.price.replace(/^Rs\.?\s*/i, '').replace(/,/g, '')) || 0;
     return sum + price * item.qty;
   }, 0);
 
